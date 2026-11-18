@@ -56,9 +56,18 @@ function getTodayDate() {
     );
 
     return localDate.toISOString().slice(0, 10);
+dateInput.max = getTodayDate();
+   
+function setMaxDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
 
-  dateInput.max = getTodayDate();
+    dateInput.max = `${year}-${month}-${day}`;
+}
 
+setMaxDate();
 function updateOtherTypeField() {
   const isOther = typeSelect.value === "Other";
   otherTypeField.hidden = !isOther;
@@ -372,12 +381,12 @@ itemForm.addEventListener("submit", event => {
     itemForm.reportValidity();
     return;
   }
-
-  if (dateInput.value > getTodayDate()) {
-    alert("เลือกวันที่ไม่ถูกต้อง: วันที่ทำงานต้องไม่เป็นวันในอนาคต");
-    dateInput.focus();
-    return;
-  }
+dateInput.addEventListener("change", function () {
+    if (this.value > getTodayDate()) {
+        alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
+        this.value = "";
+    }
+});
 
   // แยก Evidence ทีละบรรทัด
 

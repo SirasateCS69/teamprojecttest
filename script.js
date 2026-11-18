@@ -51,23 +51,25 @@ themeToggle.addEventListener("click", () => {
 
 function getTodayDate() {
     const now = new Date();
-    const localDate = new Date(
-        now.getTime() - now.getTimezoneOffset() * 60000
-    )};
 
-    return localDate.toISOString().slice(0, 10);
-dateInput.max = getTodayDate();
-   
-function setMaxDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
 
-    dateInput.max = `${year}-${month}-${day}`;
+    return `${year}-${month}-${day}`;
 }
 
-setMaxDate();
+dateInput.max = getTodayDate();
+
+dateInput.addEventListener("change", function () {
+    if (this.value && this.value > getTodayDate()) {
+        alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
+        this.value = "";
+    }
+});
+
+   
+
 function updateOtherTypeField() {
   const isOther = typeSelect.value === "Other";
   otherTypeField.hidden = !isOther;
@@ -353,40 +355,76 @@ portfolioForm.addEventListener("submit", event => {
 });
 
 
-deleteBtn.addEventListener("click", () => {
-  const portfolio = getSelectedPortfolio();
-  if (!portfolio) return;
-
-  if (!confirm(`ลบ "${portfolio.name}" ใช่หรือไม่?`)) return;
-
-  portfolios = portfolios.filter(p => p.id !== selectedId);
-  selectedId = portfolios.length > 0 ? portfolios[0].id : null;
-
-  saveData();
-  renderAll();
-});
-
-
 itemForm.addEventListener("submit", event => {
   event.preventDefault();
 
   const portfolio = getSelectedPortfolio();
+
   if (!portfolio) {
     alert("กรุณาสร้างหรือเลือก Portfolio ก่อน");
     return;
   }
+
+  if (!itemForm.checkValidity()) {
+    itemForm.reportValidity();
+    return;
+  }
+
+  // ตรวจสอบวันที่
+  if (dateInput.value > getTodayDate()) {
+    alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
+    dateInput.value = "";
+    dateInput.focus();
+    return;
+  }
+
+  // แยก Evidence ทีละบรรทัด
+  const evidence = document.getElementById("evidence").value
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line !== "");
+
+  const allLinksOk = evidence.every(url => /^https?:\/\/.+/i.test(url));
+
+  if (evidence.length === 0 || !allLinksOk) {
+    alert("Evidence ต้องมีอย่างน้อย 1 ลิงก์ และขึ้นต้นด้วย http:// หรือ https://");
+    return;
+  }
+
+  const skills = document.getElementById("skills").value
+    .split(",")
+    .map(s => s.trim())
+    .filter(s => s !== "");
+
+  const newItem = {
+    title: document.getElementById("title").value.trim(),
+    type: document.getElementById("type").value,
+    typeDetails: typeSelect.value === "Other" ? otherTypeInput.value.trim() : "",
+    date: dateInput.value,
+    role: document.getElementById("role").value.trim(),
+    description: document.getElementById("description").value.trim(),
+    skills: skills,
+    whatIDid: document.getElementById("whatIDid").value.trim(),
+    whatILearned: document.getElementById("whatILearned").value.trim(),
+    challenge: document.getElementById("challenge").value.trim(),
+    nextStep: document.getElementById("nextStep").value.trim(),
+    evidence: evidence
+  };
+
+  portfolio.items.push(newItem);
+
+  saveData();
+  itemForm.reset();
+  renderAll();
+});
+
 
 
   if (!itemForm.checkValidity()) {
     itemForm.reportValidity();
     return;
   }
-dateInput.addEventListener("change", function () {
-    if (this.value > getTodayDate()) {
-        alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
-        this.value = "";
-    }
-});
+
 
   // แยก Evidence ทีละบรรทัด
 
@@ -428,7 +466,6 @@ dateInput.addEventListener("change", function () {
   saveData();
   itemForm.reset();
   renderAll();
-});
 
 
 itemsContainer.addEventListener("click", event => {
@@ -444,7 +481,6 @@ itemsContainer.addEventListener("click", event => {
 
   saveData();
   renderAll();
-
 });
 
 loadData().then(renderAll);

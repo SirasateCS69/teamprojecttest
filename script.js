@@ -59,14 +59,30 @@ function getTodayDate() {
     return `${year}-${month}-${day}`;
 }
 
-dateInput.max = getTodayDate();
+function setMaxDate() {
+    const today = getTodayDate();
+    dateInput.max = today;   // native picker จะเลือกเกินวันนี้ไม่ได้
+    dateInput.min = "1900-01-01";
+}
+setMaxDate();
 
-dateInput.addEventListener("change", function () {
-    if (this.value && this.value > getTodayDate()) {
+function rejectFutureDate(input) {
+    if (input.value && input.value > getTodayDate()) {
         alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
-        this.value = "";
+        input.value = "";
     }
+}
+
+// เช็คทั้ง input (มือถือ/พิมพ์มือ) และ change (desktop picker)
+["input", "change", "blur"].forEach(evt => {
+    dateInput.addEventListener(evt, function () {
+        rejectFutureDate(this);
+    });
 });
+
+// กันเผื่อ browser มือถือไม่เคารพ max: เช็คทุกครั้งที่เปิดฟอร์ม/ทุกวัน
+itemForm.addEventListener("focusin", () => setMaxDate());
+setInterval(setMaxDate, 60 * 60 * 1000);
 
    
 
@@ -370,8 +386,8 @@ itemForm.addEventListener("submit", event => {
     return;
   }
 
-  // ตรวจสอบวันที่
-  if (dateInput.value > getTodayDate()) {
+  // ตรวจสอบวันที่ (กันวันอนาคตอีกชั้นสุดท้ายก่อนบันทึก)
+  if (dateInput.value && dateInput.value > getTodayDate()) {
     alert("ไม่สามารถเลือกวันที่ในอนาคตได้");
     dateInput.value = "";
     dateInput.focus();
@@ -418,54 +434,6 @@ itemForm.addEventListener("submit", event => {
   renderAll();
 });
 
-
-
-  if (!itemForm.checkValidity()) {
-    itemForm.reportValidity();
-    return;
-  }
-
-
-  // แยก Evidence ทีละบรรทัด
-
-  const evidence = document.getElementById("evidence").value
-    .split("\n")
-    .map(line => line.trim())
-    .filter(line => line !== "");
-
-  const allLinksOk = evidence.every(url => /^https?:\/\/.+/i.test(url));
-
-  if (evidence.length === 0 || !allLinksOk) {
-    alert("Evidence ต้องมีอย่างน้อย 1 ลิงก์ และขึ้นต้นด้วย http:// หรือ https://");
-    return;
-  }
-
-
-  const skills = document.getElementById("skills").value
-    .split(",")
-    .map(s => s.trim())
-    .filter(s => s !== "");
-
-  const newItem = {
-    title: document.getElementById("title").value.trim(),
-    type: document.getElementById("type").value,
-    typeDetails: typeSelect.value === "Other" ? otherTypeInput.value.trim() : "",
-    date: document.getElementById("date").value,
-    role: document.getElementById("role").value.trim(),
-    description: document.getElementById("description").value.trim(),
-    skills: skills,
-    whatIDid: document.getElementById("whatIDid").value.trim(),
-    whatILearned: document.getElementById("whatILearned").value.trim(),
-    challenge: document.getElementById("challenge").value.trim(),
-    nextStep: document.getElementById("nextStep").value.trim(),
-    evidence: evidence
-  };
-
-  portfolio.items.push(newItem);
-
-  saveData();
-  itemForm.reset();
-  renderAll();
 
 
 itemsContainer.addEventListener("click", event => {

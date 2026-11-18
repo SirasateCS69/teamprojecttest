@@ -55,7 +55,7 @@ function getTodayDate() {
   return localDate.toISOString().slice(0, 10);
 }
 
-dateInput.max = getTodayDate();
+dateInput.setAttribute("max", getTodayDate());
 
 function updateOtherTypeField() {
   const isOther = typeSelect.value === "Other";
